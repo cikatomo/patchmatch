@@ -44,8 +44,7 @@
 <li>Works with incomplete images containing nan values, just ignoring
 them.</li>
 <li>Works with any given mask passed as an argument.</li>
-<li>Handles comparison of l-1, l-2 distances.
-</li>
+<li>Handles comparison of l-1, l-2 distances.</li>
 </ul>
 </p>
 <h6>Format:</h6>
