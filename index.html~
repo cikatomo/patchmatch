@@ -37,14 +37,14 @@
 <p>This is a MATLAB implementation of bruteforce matching between image patches.</p>
 <h6>Salient Features:</h6>
 <p><ul>
-<li>Runs on double images.</li>
+<li>Runs on double datatype images.</li>
 <li>Works between two different images.</li>
 <li>Works between two different sized Images.</li>
 <li>Works on both Grayscale and Color images.</li>
 <li>Works with incomplete images containing nan values, just ignoring
 them.</li>
 <li>Works with any given mask passed as an argument.</li>
-<li>Handles comparison of l-1, l-2 distances.<br>
+<li>Handles comparison of l-1, l-2 distances.
 </li>
 </ul>
 </p>
