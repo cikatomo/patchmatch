@@ -21,6 +21,8 @@ h = figure;
 imshow(uint8(img));
 sz = size(img);
 
+if(numel(patchsize)==1), patchsize = [patchsize patchsize]; end;
+
 while true
     try
         % try getting
@@ -28,7 +30,7 @@ while true
             figure(h);
             [y, x] = ginput(1);
             x = fix(x); y = fix(y);
-            if(x>0 && x<=(sz(1)-patchsize) && y>0 && y<=(sz(2)-patchsize))
+            if(x>0 && x<=(sz(1)-patchsize(1)) && y>0 && y<=(sz(2)-patchsize(2)))
                 ok = 1;
             end
         end
@@ -52,7 +54,7 @@ while true
         ndim = max(ndi);
         for k = 1:length(nd)
             color = [(1-(find(ndi==k,1,'first')/ndim)^0.6) 0.15 0.15];
-            h2(k,1) = rectangle('Position',[nx(k) ny(k) patchsize patchsize],'LineWidth', 2,'EdgeColor', color);
+            h2(k,1) = rectangle('Position',[nx(k) ny(k) patchsize(2) patchsize(1)],'LineWidth', 2,'EdgeColor', color);
         end
         
         % reset
