@@ -8,13 +8,15 @@ This library is a partial implementation of the method used in the article "Symm
 
 If you use this library, please cite the following article.
 
-> @article{symm,  
->  author  = "Haque, Sk. Mohammadul and Pai, Gautam and Govindu, Venu Madhav",  
->  title   = "Symmetric Smoothing Filters from Global Consistency Constraints",  
->  journal = "IEEE Transactions on Image Processing",  
->  year    = "2014",  
->  url = {http://www.ee.iisc.ernet.in/labs/cvl/papers/consistency.pdf}  
-> }
+> 
+@article{symm,  
+ author  = "Haque, Sk. Mohammadul and Pai, Gautam and Govindu, Venu Madhav",  
+ title   = "Symmetric Smoothing Filters from Global Consistency Constraints",  
+ journal = "IEEE Transactions on Image Processing",  
+ year    = "2014",  
+ url = {http://www.ee.iisc.ernet.in/labs/cvl/papers/consistency.pdf}  
+}   
+>
 
 
 Visit http://mohammadul.github.io/patchmatchfor more details.
