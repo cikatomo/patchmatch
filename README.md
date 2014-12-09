@@ -19,4 +19,4 @@ If you use this library, please cite the following article.
 >
 
 
-Visit http://mohammadul.github.io/patchmatchfor more details.
+Visit http://mohammadul.github.io/patchmatch for more details.
