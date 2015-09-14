@@ -96,12 +96,12 @@ __inline double blockmatchcolor_poisson(DATA_TYPE si, DATA_TYPE sj, DATA_TYPE ti
 __inline double blockmatchgray_cmu(DATA_TYPE si, DATA_TYPE sj, DATA_TYPE ti, DATA_TYPE tj, double **mask, double *img_src, double *img_dst, DATA_TYPE *patchsize, DATA_TYPE imgsM, DATA_TYPE imgsN, DATA_TYPE imgtM, DATA_TYPE imgtN);
 __inline double blockmatchcolor_cmu(DATA_TYPE si, DATA_TYPE sj, DATA_TYPE ti, DATA_TYPE tj, double **mask, double *img_src, double *img_dst, DATA_TYPE *patchsize, DATA_TYPE imgsM, DATA_TYPE imgsN, DATA_TYPE imgtM, DATA_TYPE imgtN);
 
-__inline double blockmatchgrayi(DATA_TYPE si, DATA_TYPE sj, DATA_TYPE ti, DATA_TYPE tj, double **mask, double *img, DATA_TYPE *patchsize, DATA_TYPE imgM, DATA_TYPE imgN, double threshold);
-__inline double blockmatchcolori(DATA_TYPE si, DATA_TYPE sj, DATA_TYPE ti, DATA_TYPE tj, double **mask, double *img, DATA_TYPE *patchsize, DATA_TYPE imgM, DATA_TYPE imgN, double threshold);
-__inline double blockmatchgrayi_one(DATA_TYPE si, DATA_TYPE sj, DATA_TYPE ti, DATA_TYPE tj, double **mask, double *img, DATA_TYPE *patchsize, DATA_TYPE imgM, DATA_TYPE imgN, double threshold);
-__inline double blockmatchcolori_one(DATA_TYPE si, DATA_TYPE sj, DATA_TYPE ti, DATA_TYPE tj, double **mask, double *img, DATA_TYPE *patchsize, DATA_TYPE imgM, DATA_TYPE imgN, double threshold);
-__inline double blockmatchgrayi_poisson(DATA_TYPE si, DATA_TYPE sj, DATA_TYPE ti, DATA_TYPE tj, double **mask, double *img, DATA_TYPE *patchsize, DATA_TYPE imgM, DATA_TYPE imgN, double threshold);
-__inline double blockmatchcolori_poisson(DATA_TYPE si, DATA_TYPE sj, DATA_TYPE ti, DATA_TYPE tj, double **mask, double *img, DATA_TYPE *patchsize, DATA_TYPE imgM, DATA_TYPE imgN, double threshold);
+__inline double blockmatchgrayi(DATA_TYPE si, DATA_TYPE sj, DATA_TYPE ti, DATA_TYPE tj, double **mask, double *img_src, double *img_dst, DATA_TYPE *patchsize, DATA_TYPE imgsM, DATA_TYPE imgsN, DATA_TYPE imgtM, DATA_TYPE imgtN, double threshold);
+__inline double blockmatchcolori(DATA_TYPE si, DATA_TYPE sj, DATA_TYPE ti, DATA_TYPE tj, double **mask, double *img_src, double *img_dst, DATA_TYPE *patchsize, DATA_TYPE imgsM, DATA_TYPE imgsN, DATA_TYPE imgtM, DATA_TYPE imgtN, double threshold);
+__inline double blockmatchgrayi_one(DATA_TYPE si, DATA_TYPE sj, DATA_TYPE ti, DATA_TYPE tj, double **mask, double *img_src, double *img_dst, DATA_TYPE *patchsize, DATA_TYPE imgsM, DATA_TYPE imgsN, DATA_TYPE imgtM, DATA_TYPE imgtN, double threshold);
+__inline double blockmatchcolori_one(DATA_TYPE si, DATA_TYPE sj, DATA_TYPE ti, DATA_TYPE tj, double **mask, double *img_src, double *img_dst, DATA_TYPE *patchsize, DATA_TYPE imgsM, DATA_TYPE imgsN, DATA_TYPE imgtM, DATA_TYPE imgtN, double threshold);
+__inline double blockmatchgrayi_poisson(DATA_TYPE si, DATA_TYPE sj, DATA_TYPE ti, DATA_TYPE tj, double **mask, double *img_src, double *img_dst, DATA_TYPE *patchsize, DATA_TYPE imgsM, DATA_TYPE imgsN, DATA_TYPE imgtM, DATA_TYPE imgtN, double threshold);
+__inline double blockmatchcolori_poisson(DATA_TYPE si, DATA_TYPE sj, DATA_TYPE ti, DATA_TYPE tj, double **mask, double *img_src, double *img_dst, DATA_TYPE *patchsize, DATA_TYPE imgsM, DATA_TYPE imgsN, DATA_TYPE imgtM, DATA_TYPE imgtN, double threshold);
 
 
 void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
@@ -277,7 +277,7 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
     if((patchsize[0]>IMG_DIMS_SRC[0])||(patchsize[1]>IMG_DIMS_SRC[1])) mexErrMsgTxt("PATCHSIZE size is greater than IMG_SRC size.");
 
     /* get pointer to image and its dimensions */
-    if(incomplete||nrhs<2)
+    if(nrhs<2)
     {
         img_dst = mxGetPr(IMG_SRC_IN);
         IMG_DIMS_DST_ORI = mxGetDimensions(IMG_SRC_IN);
@@ -1006,7 +1006,7 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
         }
 
     }
-    /* nan / incomplete */ /* not done for two different images */
+    /* nan / incomplete */ /* done for two different images but code may contain bugs */
     else
     {
         if(disttype==3) /* poisson */
@@ -1024,20 +1024,21 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
                     for(DATA_TYPE si=0; si<=max_X; ++si)
                     {
                         DATA_TYPE startx, starty, endx, endy;
-                        DATA_TYPE M = IMG_DIMS_SRC[0], N = IMG_DIMS_SRC[1];
+                        DATA_TYPE Ms = IMG_DIMS_SRC[0], Ns = IMG_DIMS_SRC[1];
+                        DATA_TYPE Mt = IMG_DIMS_DST[0], Nt = IMG_DIMS_DST[1];
                         vector<pxpair> pxall;
                         vector<double> distall;
                         double curr_dist, thresh = threshold;
 
-                        startx = si-searchradius;
+                        startx = ((si*IMG_DIMS_DST[0])/IMG_DIMS_SRC[0])-searchradius;
                         startx = (startx>0)?startx: 0;
-                        starty = sj-searchradius;
+                        starty = ((sj*IMG_DIMS_DST[1])/IMG_DIMS_SRC[1])-searchradius;
                         starty = (starty>0)?starty: 0;
 
-                        endx = si+searchradius;
-                        endx = (endx<(M-patchsize[0]))?endx: (M-patchsize[0]);
-                        endy = sj+searchradius;
-                        endy = (endy<(N-patchsize[1]))?endy: (N-patchsize[1]);
+                        endx = ((si*IMG_DIMS_DST[0])/IMG_DIMS_SRC[0])+searchradius;
+                        endx = (endx<(Mt-patchsize[0]))?endx: (Mt-patchsize[0]);
+                        endy = ((sj*IMG_DIMS_DST[1])/IMG_DIMS_SRC[1])+searchradius;
+                        endy = (endy<(Nt-patchsize[1]))?endy: (Nt-patchsize[1]);
 
                         for(DATA_TYPE nj=starty; nj<=endy; nj+=searchstep)
                         {
@@ -1045,7 +1046,7 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
                             {
                                 if(si!=ni || sj!=nj||includeself)
                                 {
-                                    curr_dist = blockmatchgrayi_poisson(si, sj, ni, nj, mask, img_src, patchsize, M, N, thresh);
+                                    curr_dist = blockmatchgrayi_poisson(si, sj, ni, nj, mask, img_src, img_dst, patchsize, Ms, Ns, Mt, Nt, thresh);
                                     //mexPrintf("Source: (%Ld, %Ld) || Target: (%Ld, %Ld) || Dist: %f\n", si, sj, ni, nj, curr_dist);
                                     pxpair curr_px = {ni, nj};
                                     pxall.push_back(curr_px);
@@ -1093,20 +1094,21 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
                     for(DATA_TYPE si=0; si<=max_X; ++si)
                     {
                         DATA_TYPE startx, starty, endx, endy;
-                        DATA_TYPE M = IMG_DIMS_SRC[0], N = IMG_DIMS_SRC[1];
+                        DATA_TYPE Ms = IMG_DIMS_SRC[0], Ns = IMG_DIMS_SRC[1];
+                        DATA_TYPE Mt = IMG_DIMS_DST[0], Nt = IMG_DIMS_DST[1];
                         vector<pxpair> pxall;
                         vector<double> distall;
                         double curr_dist, thresh = threshold;
 
-                        startx = si-searchradius;
+                        startx = ((si*IMG_DIMS_DST[0])/IMG_DIMS_SRC[0])-searchradius;
                         startx = (startx>0)?startx: 0;
-                        starty = sj-searchradius;
+                        starty = ((sj*IMG_DIMS_DST[1])/IMG_DIMS_SRC[1])-searchradius;
                         starty = (starty>0)?starty: 0;
 
-                        endx = si+searchradius;
-                        endx = (endx<(M-patchsize[0]))?endx: (M-patchsize[0]);
-                        endy = sj+searchradius;
-                        endy = (endy<(N-patchsize[1]))?endy: (N-patchsize[1]);
+                        endx = ((si*IMG_DIMS_DST[0])/IMG_DIMS_SRC[0])+searchradius;
+                        endx = (endx<(Mt-patchsize[0]))?endx: (Mt-patchsize[0]);
+                        endy = ((sj*IMG_DIMS_DST[1])/IMG_DIMS_SRC[1])+searchradius;
+                        endy = (endy<(Nt-patchsize[1]))?endy: (Nt-patchsize[1]);
 
                         for(DATA_TYPE nj=starty; nj<=endy; nj+=searchstep)
                         {
@@ -1114,7 +1116,7 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
                             {
                                 if(si!=ni || sj!=nj||includeself)
                                 {
-                                    curr_dist = blockmatchcolori_poisson(si, sj, ni, nj, mask, img_src, patchsize, M, N, thresh);
+                                    curr_dist = blockmatchcolori_poisson(si, sj, ni, nj, mask, img_src, img_dst, patchsize, Ms, Ns, Mt, Nt, thresh);
                                     //mexPrintf("Source: (%Ld, %Ld) || Target: (%Ld, %Ld) || Dist: %f\n", si, sj, ni, nj, curr_dist);
                                     pxpair curr_px = {ni, nj};
                                     pxall.push_back(curr_px);
@@ -1180,20 +1182,21 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
                     for(DATA_TYPE si=0; si<=max_X; ++si)
                     {
                         DATA_TYPE startx, starty, endx, endy;
-                        DATA_TYPE M = IMG_DIMS_SRC[0], N = IMG_DIMS_SRC[1];
+                        DATA_TYPE Ms = IMG_DIMS_SRC[0], Ns = IMG_DIMS_SRC[1];
+                        DATA_TYPE Mt = IMG_DIMS_DST[0], Nt = IMG_DIMS_DST[1];
                         vector<pxpair> pxall;
                         vector<double> distall;
                         double curr_dist, thresh = threshold;
 
-                        startx = si-searchradius;
+                        startx = ((si*IMG_DIMS_DST[0])/IMG_DIMS_SRC[0])-searchradius;
                         startx = (startx>0)?startx: 0;
-                        starty = sj-searchradius;
+                        starty = ((sj*IMG_DIMS_DST[1])/IMG_DIMS_SRC[1])-searchradius;
                         starty = (starty>0)?starty: 0;
 
-                        endx = si+searchradius;
-                        endx = (endx<(M-patchsize[0]))?endx: (M-patchsize[0]);
-                        endy = sj+searchradius;
-                        endy = (endy<(N-patchsize[1]))?endy: (N-patchsize[1]);
+                        endx = ((si*IMG_DIMS_DST[0])/IMG_DIMS_SRC[0])+searchradius;
+                        endx = (endx<(Mt-patchsize[0]))?endx: (Mt-patchsize[0]);
+                        endy = ((sj*IMG_DIMS_DST[1])/IMG_DIMS_SRC[1])+searchradius;
+                        endy = (endy<(Nt-patchsize[1]))?endy: (Nt-patchsize[1]);
 
                         for(DATA_TYPE nj=starty; nj<=endy; nj+=searchstep)
                         {
@@ -1201,7 +1204,7 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
                             {
                                 if(si!=ni || sj!=nj||includeself)
                                 {
-                                    curr_dist = blockmatchgrayi(si, sj, ni, nj, mask, img_src, patchsize, M, N, thresh);
+                                    curr_dist = blockmatchgrayi(si, sj, ni, nj, mask, img_src, img_dst, patchsize, Ms, Ns, Mt, Nt, thresh);
                                     //mexPrintf("Source: (%Ld, %Ld) || Target: (%Ld, %Ld) || Dist: %f\n", si, sj, ni, nj, curr_dist);
                                     pxpair curr_px = {ni, nj};
                                     pxall.push_back(curr_px);
@@ -1249,20 +1252,21 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
                     for(DATA_TYPE si=0; si<=max_X; ++si)
                     {
                         DATA_TYPE startx, starty, endx, endy;
-                        DATA_TYPE M = IMG_DIMS_SRC[0], N = IMG_DIMS_SRC[1];
+                        DATA_TYPE Ms = IMG_DIMS_SRC[0], Ns = IMG_DIMS_SRC[1];
+                        DATA_TYPE Mt = IMG_DIMS_DST[0], Nt = IMG_DIMS_DST[1];
                         vector<pxpair> pxall;
                         vector<double> distall;
                         double curr_dist, thresh = threshold;
 
-                        startx = si-searchradius;
+                        startx = ((si*IMG_DIMS_DST[0])/IMG_DIMS_SRC[0])-searchradius;
                         startx = (startx>0)?startx: 0;
-                        starty = sj-searchradius;
+                        starty = ((sj*IMG_DIMS_DST[1])/IMG_DIMS_SRC[1])-searchradius;
                         starty = (starty>0)?starty: 0;
 
-                        endx = si+searchradius;
-                        endx = (endx<(M-patchsize[0]))?endx: (M-patchsize[0]);
-                        endy = sj+searchradius;
-                        endy = (endy<(N-patchsize[1]))?endy: (N-patchsize[1]);
+                        endx = ((si*IMG_DIMS_DST[0])/IMG_DIMS_SRC[0])+searchradius;
+                        endx = (endx<(Mt-patchsize[0]))?endx: (Mt-patchsize[0]);
+                        endy = ((sj*IMG_DIMS_DST[1])/IMG_DIMS_SRC[1])+searchradius;
+                        endy = (endy<(Nt-patchsize[1]))?endy: (Nt-patchsize[1]);
 
                         for(DATA_TYPE nj=starty; nj<=endy; nj+=searchstep)
                         {
@@ -1270,7 +1274,7 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
                             {
                                 if(si!=ni || sj!=nj||includeself)
                                 {
-                                    curr_dist = blockmatchcolori(si, sj, ni, nj, mask, img_src, patchsize, M, N, thresh);
+                                    curr_dist = blockmatchcolori(si, sj, ni, nj, mask, img_src, img_dst, patchsize, Ms, Ns, Mt, Nt, thresh);
                                     //mexPrintf("Source: (%Ld, %Ld) || Target: (%Ld, %Ld) || Dist: %f\n", si, sj, ni, nj, curr_dist);
                                     pxpair curr_px = {ni, nj};
                                     pxall.push_back(curr_px);
@@ -1335,20 +1339,21 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
                     for(DATA_TYPE si=0; si<=max_X; ++si)
                     {
                         DATA_TYPE startx, starty, endx, endy;
-                        DATA_TYPE M = IMG_DIMS_SRC[0], N = IMG_DIMS_SRC[1];
+                        DATA_TYPE Ms = IMG_DIMS_SRC[0], Ns = IMG_DIMS_SRC[1];
+                        DATA_TYPE Mt = IMG_DIMS_DST[0], Nt = IMG_DIMS_DST[1];
                         vector<pxpair> pxall;
                         vector<double> distall;
                         double curr_dist, thresh = threshold;
 
-                        startx = si-searchradius;
+                        startx = ((si*IMG_DIMS_DST[0])/IMG_DIMS_SRC[0])-searchradius;
                         startx = (startx>0)?startx: 0;
-                        starty = sj-searchradius;
+                        starty = ((sj*IMG_DIMS_DST[1])/IMG_DIMS_SRC[1])-searchradius;
                         starty = (starty>0)?starty: 0;
 
-                        endx = si+searchradius;
-                        endx = (endx<(M-patchsize[0]))?endx: (M-patchsize[0]);
-                        endy = sj+searchradius;
-                        endy = (endy<(N-patchsize[1]))?endy: (N-patchsize[1]);
+                        endx = ((si*IMG_DIMS_DST[0])/IMG_DIMS_SRC[0])+searchradius;
+                        endx = (endx<(Mt-patchsize[0]))?endx: (Mt-patchsize[0]);
+                        endy = ((sj*IMG_DIMS_DST[1])/IMG_DIMS_SRC[1])+searchradius;
+                        endy = (endy<(Nt-patchsize[1]))?endy: (Nt-patchsize[1]);
 
                         for(DATA_TYPE nj=starty; nj<=endy; nj+=searchstep)
                         {
@@ -1356,7 +1361,7 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
                             {
                                 if(si!=ni || sj!=nj||includeself)
                                 {
-                                    curr_dist = blockmatchgrayi_one(si, sj, ni, nj, mask, img_src, patchsize, M, N, thresh);
+                                    curr_dist = blockmatchgrayi_one(si, sj, ni, nj, mask, img_src, img_dst, patchsize, Ms, Ns, Mt, Nt, thresh);
                                     //mexPrintf("Source: (%Ld, %Ld) || Target: (%Ld, %Ld) || Dist: %f\n", si, sj, ni, nj, curr_dist);
                                     pxpair curr_px = {ni, nj};
                                     pxall.push_back(curr_px);
@@ -1404,20 +1409,21 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
                     for(DATA_TYPE si=0; si<=max_X; ++si)
                     {
                         DATA_TYPE startx, starty, endx, endy;
-                        DATA_TYPE M = IMG_DIMS_SRC[0], N = IMG_DIMS_SRC[1];
+                        DATA_TYPE Ms = IMG_DIMS_SRC[0], Ns = IMG_DIMS_SRC[1];
+                        DATA_TYPE Mt = IMG_DIMS_DST[0], Nt = IMG_DIMS_DST[1];
                         vector<pxpair> pxall;
                         vector<double> distall;
                         double curr_dist, thresh = threshold;
 
-                        startx = si-searchradius;
+                        startx = ((si*IMG_DIMS_DST[0])/IMG_DIMS_SRC[0])-searchradius;
                         startx = (startx>0)?startx: 0;
-                        starty = sj-searchradius;
+                        starty = ((sj*IMG_DIMS_DST[1])/IMG_DIMS_SRC[1])-searchradius;
                         starty = (starty>0)?starty: 0;
 
-                        endx = si+searchradius;
-                        endx = (endx<(M-patchsize[0]))?endx: (M-patchsize[0]);
-                        endy = sj+searchradius;
-                        endy = (endy<(N-patchsize[1]))?endy: (N-patchsize[1]);
+                        endx = ((si*IMG_DIMS_DST[0])/IMG_DIMS_SRC[0])+searchradius;
+                        endx = (endx<(Mt-patchsize[0]))?endx: (Mt-patchsize[0]);
+                        endy = ((sj*IMG_DIMS_DST[1])/IMG_DIMS_SRC[1])+searchradius;
+                        endy = (endy<(Nt-patchsize[1]))?endy: (Nt-patchsize[1]);
 
                         for(DATA_TYPE nj=starty; nj<=endy; nj+=searchstep)
                         {
@@ -1425,7 +1431,7 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
                             {
                                 if(si!=ni || sj!=nj||includeself)
                                 {
-                                    curr_dist = blockmatchcolori_one(si, sj, ni, nj, mask, img_src, patchsize, M, N, thresh);
+                                    curr_dist = blockmatchcolori_one(si, sj, ni, nj, mask, img_src, img_dst, patchsize, Ms, Ns, Mt, Nt, thresh);
                                     //mexPrintf("Source: (%Ld, %Ld) || Target: (%Ld, %Ld) || Dist: %f\n", si, sj, ni, nj, curr_dist);
                                     pxpair curr_px = {ni, nj};
                                     pxall.push_back(curr_px);
@@ -1830,15 +1836,15 @@ __inline double blockmatchcolor_poisson(DATA_TYPE si, DATA_TYPE sj, DATA_TYPE ti
 
 
 
-__inline double blockmatchgrayi(DATA_TYPE si, DATA_TYPE sj, DATA_TYPE ti, DATA_TYPE tj, double **mask, double *img, DATA_TYPE *patchsize, DATA_TYPE imgM, DATA_TYPE imgN, double threshold)
+__inline double blockmatchgrayi(DATA_TYPE si, DATA_TYPE sj, DATA_TYPE ti, DATA_TYPE tj, double **mask, double *img_src, double *img_dst, DATA_TYPE *patchsize, DATA_TYPE imgsM, DATA_TYPE imgsN, DATA_TYPE imgtM, DATA_TYPE imgtN, double threshold)
 {
-    DATA_TYPE i, j, src_idx = sj*imgM+si, tgt_idx = tj*imgM+ti;
+    DATA_TYPE i, j, src_idx = sj*imgsM+si, tgt_idx = tj*imgtM+ti;
     double dist = 0.0, den = 0, temp;
     for(j=0; j<patchsize[1]; ++j)
     {
         for(i=0; i<patchsize[0]; ++i)
         {
-            temp = (img[src_idx+i]-img[tgt_idx+i])*(img[src_idx+i]-img[tgt_idx+i]);
+            temp = (img_src[src_idx+i]-img_dst[tgt_idx+i])*(img_src[src_idx+i]-img_dst[tgt_idx+i]);
             if(!isnan(temp))
             {
                 dist += mask[i][j]*temp;
@@ -1846,68 +1852,68 @@ __inline double blockmatchgrayi(DATA_TYPE si, DATA_TYPE sj, DATA_TYPE ti, DATA_T
             }
             //mexPrintf("(si, sj) = (%d, %d), (ti, tj) = (%d, %d),|| i = %d, j= %d, || sval = %f, tval = %f, dist = %f\n", si,sj,ti,tj, i,j,img[src_idx+i],img[tgt_idx+i], (img[src_idx+i]-img[tgt_idx+i])*(img[src_idx+i]-img[tgt_idx+i]));
         }
-        src_idx += imgM;
-        tgt_idx += imgM;
+        src_idx += imgsM;
+        tgt_idx += imgtM;
     }
     dist /= den;
     if(den<=threshold) dist = static_cast<double>(LPOS_VAL);
     return dist;
 }
 
-__inline double blockmatchcolori(DATA_TYPE si, DATA_TYPE sj, DATA_TYPE ti, DATA_TYPE tj, double **mask, double *img, DATA_TYPE *patchsize, DATA_TYPE imgM, DATA_TYPE imgN, double threshold)
+__inline double blockmatchcolori(DATA_TYPE si, DATA_TYPE sj, DATA_TYPE ti, DATA_TYPE tj, double **mask, double *img_src, double *img_dst, DATA_TYPE *patchsize, DATA_TYPE imgsM, DATA_TYPE imgsN, DATA_TYPE imgtM, DATA_TYPE imgtN, double threshold)
 {
-    DATA_TYPE i, j, src_idx = sj*imgM+si, tgt_idx = tj*imgM+ti, numels = imgM*imgN;
-    double dist = 0.0, den = 0, temp;
+    DATA_TYPE i, j, src_idx = sj*imgsM+si, tgt_idx = tj*imgtM+ti, numels_src = imgsM*imgsN, numels_dst = imgtM*imgtN;
+    double dist = 0.0, den = 0.0, temp;
     /* channel R */
     for(j=0; j<patchsize[1]; ++j)
     {
         for(i=0; i<patchsize[0]; ++i)
         {
-            temp = mask[i][j]*(img[src_idx+i]-img[tgt_idx+i])*(img[src_idx+i]-img[tgt_idx+i]);
+            temp = mask[i][j]*(img_src[src_idx+i]-img_dst[tgt_idx+i])*(img_src[src_idx+i]-img_dst[tgt_idx+i]);
             if(!isnan(temp))
             {
                 dist += mask[i][j]*temp;
                 den += mask[i][j];
             }
         }
-        src_idx += imgM;
-        tgt_idx += imgM;
+        src_idx += imgsM;
+        tgt_idx += imgtM;
     }
 
     /* channel G */
-    src_idx = sj*imgM+si+numels;
-    tgt_idx = tj*imgM+ti+numels; /* shift to the next layer */
+    src_idx = sj*imgsM+si+numels_src;
+    tgt_idx = tj*imgtM+ti+numels_dst; /* shift to the next layer */
     for(j=0; j<patchsize[1]; ++j)
     {
         for(i=0; i<patchsize[0]; ++i)
         {
-            temp = mask[i][j]*(img[src_idx+i]-img[tgt_idx+i])*(img[src_idx+i]-img[tgt_idx+i]);
+            temp = mask[i][j]*(img_src[src_idx+i]-img_dst[tgt_idx+i])*(img_src[src_idx+i]-img_dst[tgt_idx+i]);
             if(!isnan(temp))
             {
                 dist += mask[i][j]*temp;
                 den += mask[i][j];
             }
         }
-        src_idx += imgM;
-        tgt_idx += imgM;
+        src_idx += imgsM;
+        tgt_idx += imgtM;
     }
 
     /* channel B */
-    src_idx = sj*imgM+si+2*numels;
-    tgt_idx = tj*imgM+ti+2*numels; /* shift to the next layer */
+    src_idx = sj*imgsM+si+2*numels_src;
+    tgt_idx = tj*imgtM+ti+2*numels_dst; /* shift to the next layer */
     for(j=0; j<patchsize[1]; ++j)
     {
         for(i=0; i<patchsize[0]; ++i)
         {
-            temp = mask[i][j]*(img[src_idx+i]-img[tgt_idx+i])*(img[src_idx+i]-img[tgt_idx+i]);
+            temp = mask[i][j]*(img_src[src_idx+i]-img_dst[tgt_idx+i])*(img_src[src_idx+i]-img_dst[tgt_idx+i]);
             if(!isnan(temp))
             {
                 dist += mask[i][j]*temp;
                 den += mask[i][j];
             }
         }
-        src_idx += imgM;
-        tgt_idx += imgM;
+        src_idx += imgsM;
+        tgt_idx += imgtM;
     }
     dist /= den;
     if(den<=threshold) dist = static_cast<double>(LPOS_VAL);
@@ -1915,15 +1921,15 @@ __inline double blockmatchcolori(DATA_TYPE si, DATA_TYPE sj, DATA_TYPE ti, DATA_
 }
 
 
-__inline double blockmatchgrayi_one(DATA_TYPE si, DATA_TYPE sj, DATA_TYPE ti, DATA_TYPE tj, double **mask, double *img, DATA_TYPE *patchsize, DATA_TYPE imgM, DATA_TYPE imgN, double threshold)
+__inline double blockmatchgrayi_one(DATA_TYPE si, DATA_TYPE sj, DATA_TYPE ti, DATA_TYPE tj, double **mask, double *img_src, double *img_dst, DATA_TYPE *patchsize, DATA_TYPE imgsM, DATA_TYPE imgsN, DATA_TYPE imgtM, DATA_TYPE imgtN, double threshold)
 {
-    DATA_TYPE i, j, src_idx = sj*imgM+si, tgt_idx = tj*imgM+ti;
-    double dist = 0.0, den = 0, temp;
+    DATA_TYPE i, j, src_idx = sj*imgsM+si, tgt_idx = tj*imgtM+ti;
+    double dist = 0.0, den = 0.0, temp;
     for(j=0; j<patchsize[1]; ++j)
     {
         for(i=0; i<patchsize[0]; ++i)
         {
-            temp = fabs(img[src_idx+i]-img[tgt_idx+i]);
+            temp = fabs(img_src[src_idx+i]-img_dst[tgt_idx+i]);
             if(!isnan(temp))
             {
                 dist += mask[i][j]*temp;
@@ -1931,68 +1937,68 @@ __inline double blockmatchgrayi_one(DATA_TYPE si, DATA_TYPE sj, DATA_TYPE ti, DA
             }
             //mexPrintf("(si, sj) = (%d, %d), (ti, tj) = (%d, %d),|| i = %d, j= %d, || sval = %f, tval = %f, dist = %f\n", si,sj,ti,tj, i,j,img[src_idx+i],img[tgt_idx+i], (img[src_idx+i]-img[tgt_idx+i])*(img[src_idx+i]-img[tgt_idx+i]));
         }
-        src_idx += imgM;
-        tgt_idx += imgM;
+        src_idx += imgsM;
+        tgt_idx += imgtM;
     }
     dist /= den;
     if(den<=threshold) dist = static_cast<double>(LPOS_VAL);
     return dist;
 }
 
-__inline double blockmatchcolori_one(DATA_TYPE si, DATA_TYPE sj, DATA_TYPE ti, DATA_TYPE tj, double **mask, double *img, DATA_TYPE *patchsize, DATA_TYPE imgM, DATA_TYPE imgN, double threshold)
+__inline double blockmatchcolori_one(DATA_TYPE si, DATA_TYPE sj, DATA_TYPE ti, DATA_TYPE tj, double **mask, double *img_src, double *img_dst, DATA_TYPE *patchsize, DATA_TYPE imgsM, DATA_TYPE imgsN, DATA_TYPE imgtM, DATA_TYPE imgtN, double threshold)
 {
-    DATA_TYPE i, j, src_idx = sj*imgM+si, tgt_idx = tj*imgM+ti, numels = imgM*imgN;
-    double dist = 0.0, den = 0, temp;
+    DATA_TYPE i, j, src_idx = sj*imgsM+si, tgt_idx = tj*imgtM+ti, numels_src = imgsM*imgsN, numels_dst = imgtM*imgtN;
+    double dist = 0.0, den = 0.0, temp;
     /* channel R */
     for(j=0; j<patchsize[1]; ++j)
     {
         for(i=0; i<patchsize[0]; ++i)
         {
-            temp = mask[i][j]*fabs(img[src_idx+i]-img[tgt_idx+i]);
+            temp = mask[i][j]*fabs(img_src[src_idx+i]-img_dst[tgt_idx+i]);
             if(!isnan(temp))
             {
                 dist += mask[i][j]*temp;
                 den += mask[i][j];
             }
         }
-        src_idx += imgM;
-        tgt_idx += imgM;
+        src_idx += imgsM;
+        tgt_idx += imgtM;
     }
 
     /* channel G */
-    src_idx = sj*imgM+si+numels;
-    tgt_idx = tj*imgM+ti+numels; /* shift to the next layer */
+    src_idx = sj*imgsM+si+numels_src;
+    tgt_idx = tj*imgtM+ti+numels_dst; /* shift to the next layer */
     for(j=0; j<patchsize[1]; ++j)
     {
         for(i=0; i<patchsize[0]; ++i)
         {
-            temp = mask[i][j]*fabs(img[src_idx+i]-img[tgt_idx+i]);
+            temp = mask[i][j]*fabs(img_src[src_idx+i]-img_dst[tgt_idx+i]);
             if(!isnan(temp))
             {
                 dist += mask[i][j]*temp;
                 den += mask[i][j];
             }
         }
-        src_idx += imgM;
-        tgt_idx += imgM;
+        src_idx += imgsM;
+        tgt_idx += imgtM;
     }
 
     /* channel B */
-    src_idx = sj*imgM+si+2*numels;
-    tgt_idx = tj*imgM+ti+2*numels; /* shift to the next layer */
+    src_idx = sj*imgsM+si+2*numels_src;
+    tgt_idx = tj*imgtM+ti+2*numels_dst; /* shift to the next layer */
     for(j=0; j<patchsize[1]; ++j)
     {
         for(i=0; i<patchsize[0]; ++i)
         {
-            temp = mask[i][j]*fabs(img[src_idx+i]-img[tgt_idx+i]);
+            temp = mask[i][j]*fabs(img_src[src_idx+i]-img_dst[tgt_idx+i]);
             if(!isnan(temp))
             {
                 dist += mask[i][j]*temp;
                 den += mask[i][j];
             }
         }
-        src_idx += imgM;
-        tgt_idx += imgM;
+        src_idx += imgsM;
+        tgt_idx += imgtM;
     }
     dist /= den;
     if(den<=threshold) dist = static_cast<double>(LPOS_VAL);
@@ -2000,15 +2006,15 @@ __inline double blockmatchcolori_one(DATA_TYPE si, DATA_TYPE sj, DATA_TYPE ti, D
 }
 
 
-__inline double blockmatchgrayi_poisson(DATA_TYPE si, DATA_TYPE sj, DATA_TYPE ti, DATA_TYPE tj, double **mask, double *img, DATA_TYPE *patchsize, DATA_TYPE imgM, DATA_TYPE imgN, double threshold)
+__inline double blockmatchgrayi_poisson(DATA_TYPE si, DATA_TYPE sj, DATA_TYPE ti, DATA_TYPE tj, double **mask, double *img_src, double *img_dst, DATA_TYPE *patchsize, DATA_TYPE imgsM, DATA_TYPE imgsN, DATA_TYPE imgtM, DATA_TYPE imgtN, double threshold)
 {
-    DATA_TYPE i, j, src_idx = sj*imgM+si, tgt_idx = tj*imgM+ti;
-    double dist = 0.0, den = 0, temp;
+    DATA_TYPE i, j, src_idx = sj*imgsM+si, tgt_idx = tj*imgtM+ti;
+    double dist = 0.0, den = 0.0, temp;
     for(j=0; j<patchsize[1]; ++j)
     {
         for(i=0; i<patchsize[0]; ++i)
         {
-            temp = (lgamma(img[src_idx+i]+img[tgt_idx+i]+0.5)/sqrt(lgamma(2*img[src_idx+i]+0.5)*lgamma(2*img[tgt_idx+i]+0.5)));
+            temp = (lgamma(img_src[src_idx+i]+img_dst[tgt_idx+i]+0.5)/sqrt(lgamma(2*img_src[src_idx+i]+0.5)*lgamma(2*img_dst[tgt_idx+i]+0.5)));
             if(!isnan(temp))
             {
                 dist += mask[i][j]*temp;
@@ -2016,68 +2022,68 @@ __inline double blockmatchgrayi_poisson(DATA_TYPE si, DATA_TYPE sj, DATA_TYPE ti
             }
             //mexPrintf("(si, sj) = (%d, %d), (ti, tj) = (%d, %d),|| i = %d, j= %d, || sval = %f, tval = %f, dist = %f\n", si,sj,ti,tj, i,j,img[src_idx+i],img[tgt_idx+i], (img[src_idx+i]-img[tgt_idx+i])*(img[src_idx+i]-img[tgt_idx+i]));
         }
-        src_idx += imgM;
-        tgt_idx += imgM;
+        src_idx += imgsM;
+        tgt_idx += imgtM;
     }
     dist /= den;
     if(den<=threshold) dist = static_cast<double>(LPOS_VAL);
     return dist;
 }
 
-__inline double blockmatchcolori_poisson(DATA_TYPE si, DATA_TYPE sj, DATA_TYPE ti, DATA_TYPE tj, double **mask, double *img, DATA_TYPE *patchsize, DATA_TYPE imgM, DATA_TYPE imgN, double threshold)
+__inline double blockmatchcolori_poisson(DATA_TYPE si, DATA_TYPE sj, DATA_TYPE ti, DATA_TYPE tj, double **mask, double *img_src, double *img_dst, DATA_TYPE *patchsize, DATA_TYPE imgsM, DATA_TYPE imgsN, DATA_TYPE imgtM, DATA_TYPE imgtN, double threshold)
 {
-    DATA_TYPE i, j, src_idx = sj*imgM+si, tgt_idx = tj*imgM+ti, numels = imgM*imgN;
-    double dist = 0.0, den = 0, temp;
+    DATA_TYPE i, j, src_idx = sj*imgsM+si, tgt_idx = tj*imgtM+ti, numels_src = imgsM*imgsN, numels_dst = imgtM*imgtN;
+    double dist = 0.0, den = 0.0, temp;
     /* channel R */
     for(j=0; j<patchsize[1]; ++j)
     {
         for(i=0; i<patchsize[0]; ++i)
         {
-            temp = mask[i][j]*(lgamma(img[src_idx+i]+img[tgt_idx+i]+0.5)/sqrt(lgamma(2*img[src_idx+i]+0.5)*lgamma(2*img[tgt_idx+i]+0.5)));
+            temp = mask[i][j]*(lgamma(img_src[src_idx+i]+img_dst[tgt_idx+i]+0.5)/sqrt(lgamma(2*img_src[src_idx+i]+0.5)*lgamma(2*img_dst[tgt_idx+i]+0.5)));
             if(!isnan(temp))
             {
                 dist += mask[i][j]*temp;
                 den += mask[i][j];
             }
         }
-        src_idx += imgM;
-        tgt_idx += imgM;
+        src_idx += imgsM;
+        tgt_idx += imgtM;
     }
 
     /* channel G */
-    src_idx = sj*imgM+si+numels;
-    tgt_idx = tj*imgM+ti+numels; /* shift to the next layer */
+    src_idx = sj*imgsM+si+numels_src;
+    tgt_idx = tj*imgtM+ti+numels_dst; /* shift to the next layer */
     for(j=0; j<patchsize[1]; ++j)
     {
         for(i=0; i<patchsize[0]; ++i)
         {
-            temp = mask[i][j]*(lgamma(img[src_idx+i]+img[tgt_idx+i]+0.5)/sqrt(lgamma(2*img[src_idx+i]+0.5)*lgamma(2*img[tgt_idx+i]+0.5)));
+            temp = mask[i][j]*(lgamma(img_src[src_idx+i]+img_dst[tgt_idx+i]+0.5)/sqrt(lgamma(2*img_src[src_idx+i]+0.5)*lgamma(2*img_dst[tgt_idx+i]+0.5)));
             if(!isnan(temp))
             {
                 dist += mask[i][j]*temp;
                 den += mask[i][j];
             }
         }
-        src_idx += imgM;
-        tgt_idx += imgM;
+        src_idx += imgsM;
+        tgt_idx += imgtM;
     }
 
     /* channel B */
-    src_idx = sj*imgM+si+2*numels;
-    tgt_idx = tj*imgM+ti+2*numels; /* shift to the next layer */
+    src_idx = sj*imgsM+si+2*numels_src;
+    tgt_idx = tj*imgtM+ti+2*numels_dst; /* shift to the next layer */
     for(j=0; j<patchsize[1]; ++j)
     {
         for(i=0; i<patchsize[0]; ++i)
         {
-            temp = mask[i][j]*(lgamma(img[src_idx+i]+img[tgt_idx+i]+0.5)/sqrt(lgamma(2*img[src_idx+i]+0.5)*lgamma(2*img[tgt_idx+i]+0.5)));
+            temp = mask[i][j]*(lgamma(img_src[src_idx+i]+img_dst[tgt_idx+i]+0.5)/sqrt(lgamma(2*img_src[src_idx+i]+0.5)*lgamma(2*img_dst[tgt_idx+i]+0.5)));
             if(!isnan(temp))
             {
                 dist += mask[i][j]*temp;
                 den += mask[i][j];
             }
         }
-        src_idx += imgM;
-        tgt_idx += imgM;
+        src_idx += imgsM;
+        tgt_idx += imgtM;
     }
     dist /= den;
     if(den<=threshold) dist = static_cast<double>(LPOS_VAL);
