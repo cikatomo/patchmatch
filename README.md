@@ -14,7 +14,7 @@ If you use this library, please cite the following article.
  title   = "Symmetric Smoothing Filters from Global Consistency Constraints",  
  journal = "IEEE Transactions on Image Processing",  
  year    = "2014",  
- url = {http://www.ee.iisc.ernet.in/labs/cvl/papers/consistency.pdf}  
+ url = { http://www.ee.iisc.ernet.in/labs/cvl/papers/consistency.pdf }  
 }   
 >
 
